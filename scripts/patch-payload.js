@@ -19,10 +19,10 @@ if (!fs.existsSync(file)) {
 
 const content = fs.readFileSync(file, 'utf8')
 
-if (content.startsWith("'use server'")) {
-  console.log('[patch] already patched, skipping')
-  process.exit(0)
-}
+// if (content.startsWith("'use server'")) {
+//   console.log('[patch] already patched, skipping')
+//   process.exit(0)
+// }
 
 fs.writeFileSync(file, "'use server';\n" + content)
 console.log('[patch] added "use server" to handleServerFunctions.js')
