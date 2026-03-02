@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+
+# Env files (never commit secrets)
+.env
+.env.local
+.env.production
+.env.example
+
+# Payload generated
+payload-types.ts
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# IDE
+.vscode/
+.idea/
+
+# Patches
+patches/
+
+# AI
+.claude/

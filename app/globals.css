@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Rich text styles for quiz questions ─── */
+.rich-content {
+  line-height: 1.6;
+}
+
+.rich-content h1,
+.rich-content h2,
+.rich-content h3 {
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+  margin-top: 0.75em;
+}
+
+.rich-content h1 { font-size: 1.75rem; }
+.rich-content h2 { font-size: 1.4rem; }
+.rich-content h3 { font-size: 1.15rem; }
+
+.rich-content p {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.rich-content strong { font-weight: 800; }
+.rich-content em { font-style: italic; }
+.rich-content u { text-decoration: underline; }
+.rich-content s { text-decoration: line-through; }
+
+.rich-content ul,
+.rich-content ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.5em;
+  text-align: left;
+}
+
+.rich-content ul { list-style-type: disc; }
+.rich-content ol { list-style-type: decimal; }
+
+.rich-content li {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25em;
+}
+
+.rich-content a {
+  color: inherit;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.rich-content code {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.88em;
+  font-weight: 600;
+}
+
+.rich-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 0.75em auto;
+  display: block;
+}
