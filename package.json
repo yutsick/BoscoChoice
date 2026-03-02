@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "patch-package",
+    "postinstall": "node scripts/patch-payload.js",
     "build": "next build",
     "start": "next start",
     "generate:types": "payload generate:types",
@@ -21,7 +21,6 @@
     "payload": "3.78.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "patch-package": "^8.0.1",
     "sharp": "^0.33.3"
   },
   "devDependencies": {
