@@ -52,4 +52,13 @@ export default buildConfig({
     supportedLanguages: { en },
   },
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL,
+  cors: [
+    process.env.NEXT_PUBLIC_SERVER_URL || '',
+    'http://localhost:3000',
+  ],
+
+  csrf: [
+    process.env.NEXT_PUBLIC_SERVER_URL || '',
+    'http://localhost:3000',
+  ],
 })
