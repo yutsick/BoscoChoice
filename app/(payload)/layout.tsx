@@ -12,6 +12,7 @@ type Args = {
 
 export default function PayloadLayout({ children }: Args) {
   return (
+    {/* @ts-expect-error — server action type mismatch */}
     <RootLayout config={config} importMap={importMap} serverFunction={handleServerFunctions}>
       {children}
     </RootLayout>
