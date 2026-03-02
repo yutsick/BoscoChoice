@@ -26,8 +26,6 @@ nul
 .vscode/
 .idea/
 
-# Patches
-patches/
 
 # AI
 .claude/
