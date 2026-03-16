@@ -12,8 +12,11 @@ export const Users: CollectionConfig = {
     defaultColumns: ['email', 'role', 'assignedCategory'],
   },
   access: {
-    // Only superadmin can manage users
-    read: ({ req: { user } }) => user?.role === 'superadmin',
+    read: ({ req: { user } }) => {
+      if (!user) return false
+      if (user.role === 'superadmin') return true
+      return { id: { equals: user.id } }
+    },
     create: ({ req: { user } }) => user?.role === 'superadmin',
     update: ({ req: { user } }) => user?.role === 'superadmin',
     delete: ({ req: { user } }) => user?.role === 'superadmin',

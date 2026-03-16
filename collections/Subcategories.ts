@@ -1,6 +1,5 @@
 import type { CollectionConfig } from 'payload'
-
-const isSuperAdmin = ({ req: { user } }: any) => user?.role === 'superadmin'
+import { getCategoryId } from './utils'
 
 export const Subcategories: CollectionConfig = {
   slug: 'subcategories',
@@ -11,11 +10,24 @@ export const Subcategories: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
   },
+  hooks: {
+    beforeValidate: [
+      ({ req, data }) => {
+        if (req.user?.role === 'category_admin') {
+          const catId = getCategoryId(req.user)
+          if (catId) data!.category = catId
+        }
+        return data
+      },
+    ],
+  },
   access: {
     read: ({ req: { user } }) => {
       if (!user) return false
       if (user.role === 'superadmin') return true
-      return { category: { equals: user.assignedCategory } }
+      const catId = getCategoryId(user)
+      if (!catId) return false
+      return { category: { equals: catId } }
     },
     create: ({ req: { user } }) => {
       if (!user) return false
@@ -24,12 +36,16 @@ export const Subcategories: CollectionConfig = {
     update: ({ req: { user } }) => {
       if (!user) return false
       if (user.role === 'superadmin') return true
-      return { category: { equals: user.assignedCategory } }
+      const catId = getCategoryId(user)
+      if (!catId) return false
+      return { category: { equals: catId } }
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
       if (user.role === 'superadmin') return true
-      return { category: { equals: user.assignedCategory } }
+      const catId = getCategoryId(user)
+      if (!catId) return false
+      return { category: { equals: catId } }
     },
   },
   fields: [
@@ -46,7 +62,7 @@ export const Subcategories: CollectionConfig = {
       relationTo: 'categories',
       required: true,
       admin: {
-        description: 'Категорія, до якої належить ця підкатегорія',
+        condition: (_data, _siblingData, { user }) => user?.role !== 'category_admin',
       },
     },
   ],

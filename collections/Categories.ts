@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { getCategoryId } from './utils'
 
 const isSuperAdmin = ({ req: { user } }: any) => user?.role === 'superadmin'
 
@@ -10,13 +11,15 @@ export const Categories: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
+    hidden: ({ user }) => user?.role !== 'superadmin',
   },
   access: {
     read: ({ req: { user } }) => {
       if (!user) return false
       if (user.role === 'superadmin') return true
-      // Category admin can read their own category
-      return { id: { equals: user.assignedCategory } }
+      const catId = getCategoryId(user)
+      if (!catId) return false
+      return { id: { equals: catId } }
     },
     create: isSuperAdmin,
     update: isSuperAdmin,
