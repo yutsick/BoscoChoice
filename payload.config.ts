@@ -22,6 +22,7 @@ export default buildConfig({
         Logo: './components/AdminLogo',
         Icon: './components/AdminIcon',
       },
+      beforeDashboard: ['./components/ImportQuestions'],
     },
 
     meta: {

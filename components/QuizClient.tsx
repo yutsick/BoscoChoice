@@ -1,57 +1,58 @@
 'use client'
 
-import { useEffect, useReducer, useCallback } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { buildRoundRobinQueue, QuizQuestion } from '@/lib/quiz-engine'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useCallback, useEffect, useReducer } from 'react'
+
+const STORAGE_KEY = 'bosco-shown-questions'
 
 interface Props {
   questions: QuizQuestion[]
-  categoryName: string
-  categoryColor: string
+  startCategoryId: string
 }
 
 const bgColorMap: Record<string, string> = {
-  rose:   'bg-rose-500',
+  rose: 'bg-rose-500',
   orange: 'bg-orange-500',
   yellow: 'bg-yellow-400',
-  green:  'bg-green-500',
-  blue:   'bg-blue-500',
+  green: 'bg-green-500',
+  blue: 'bg-blue-500',
   indigo: 'bg-indigo-500',
   violet: 'bg-violet-500',
-  pink:   'bg-pink-500',
+  pink: 'bg-pink-500',
 }
 
 const lightColorMap: Record<string, string> = {
-  rose:   'bg-rose-50',
+  rose: 'bg-rose-50',
   orange: 'bg-orange-50',
   yellow: 'bg-yellow-50',
-  green:  'bg-green-50',
-  blue:   'bg-blue-50',
+  green: 'bg-green-50',
+  blue: 'bg-blue-50',
   indigo: 'bg-indigo-50',
   violet: 'bg-violet-50',
-  pink:   'bg-pink-50',
+  pink: 'bg-pink-50',
 }
 
 const borderColorMap: Record<string, string> = {
-  rose:   'border-rose-200',
+  rose: 'border-rose-200',
   orange: 'border-orange-200',
   yellow: 'border-yellow-200',
-  green:  'border-green-200',
-  blue:   'border-blue-200',
+  green: 'border-green-200',
+  blue: 'border-blue-200',
   indigo: 'border-indigo-200',
   violet: 'border-violet-200',
-  pink:   'border-pink-200',
+  pink: 'border-pink-200',
 }
 
 const textColorMap: Record<string, string> = {
-  rose:   'text-rose-600',
+  rose: 'text-rose-600',
   orange: 'text-orange-600',
   yellow: 'text-yellow-700',
-  green:  'text-green-600',
-  blue:   'text-blue-600',
+  green: 'text-green-600',
+  blue: 'text-blue-600',
   indigo: 'text-indigo-600',
   violet: 'text-violet-600',
-  pink:   'text-pink-600',
+  pink: 'text-pink-600',
 }
 
 interface State {
@@ -70,13 +71,12 @@ type Action =
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'INIT':
-      return { ...state, queue: action.queue, index: 0, finished: false }
+      return { ...state, queue: action.queue, index: 0, finished: action.queue.length === 0 }
     case 'NEXT': {
       const nextIndex = state.index + 1
       if (nextIndex >= state.queue.length) {
         return { ...state, finished: true }
       }
-      // Show transition overlay every 3rd question (index 2, 5, 8 …)
       const showTransition = nextIndex % 3 === 0
       return {
         ...state,
@@ -92,7 +92,22 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-export default function QuizClient({ questions, categoryName, categoryColor }: Props) {
+function getShownIds(): Set<string> {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function addShownId(id: string) {
+  const shown = getShownIds()
+  shown.add(id)
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...shown]))
+}
+
+export default function QuizClient({ questions, startCategoryId }: Props) {
   const [state, dispatch] = useReducer(reducer, {
     queue: [],
     index: 0,
@@ -102,9 +117,20 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
   })
 
   useEffect(() => {
-    const queue = buildRoundRobinQueue(questions)
+    // Filter out already-shown questions from sessionStorage
+    const shownIds = getShownIds()
+    const available = questions.filter((q) => !shownIds.has(q.id))
+    const queue = buildRoundRobinQueue(available, startCategoryId)
     dispatch({ type: 'INIT', queue })
-  }, [questions])
+  }, [questions, startCategoryId])
+
+  // Mark current question as shown in sessionStorage
+  useEffect(() => {
+    const current = state.queue[state.index]
+    if (current) {
+      addShownId(current.id)
+    }
+  }, [state.queue, state.index])
 
   // Auto-hide transition overlay after 700ms
   useEffect(() => {
@@ -120,14 +146,16 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
     }
   }, [state.showTransition])
 
-  const bg = bgColorMap[categoryColor] ?? bgColorMap.blue
-  const lightBg = lightColorMap[categoryColor] ?? lightColorMap.blue
-  const border = borderColorMap[categoryColor] ?? borderColorMap.blue
-  const accent = textColorMap[categoryColor] ?? textColorMap.blue
-
   const current = state.queue[state.index]
 
-  if (state.queue.length === 0) {
+  // Use current question's category color (changes per question)
+  const color = current?.categoryColor ?? 'blue'
+  const bg = bgColorMap[color] ?? bgColorMap.blue
+  const lightBg = lightColorMap[color] ?? lightColorMap.blue
+  const border = borderColorMap[color] ?? borderColorMap.blue
+  const accent = textColorMap[color] ?? textColorMap.blue
+
+  if (state.queue.length === 0 && !state.finished) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-gray-400 text-xl">Завантаження питань…</p>
@@ -141,7 +169,7 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
         <div className={`rounded-3xl border-2 ${border} bg-white p-10 max-w-xl w-full text-center shadow-xl`}>
           <div className="text-6xl mb-6">🎉</div>
           <h2 className="text-3xl font-black text-gray-900 mb-4">Всі питання пройдено!</h2>
-          <p className={`${accent} font-semibold mb-8`}>Категорія: {categoryName}</p>
+          <p className="text-gray-500 mb-8">Нових питань більше немає</p>
           <a
             href="/"
             className={`${bg} text-white px-8 py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity`}
@@ -155,7 +183,7 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center ${lightBg} px-4 py-8 relative overflow-hidden`}
+      className={`min-h-screen flex flex-col items-center justify-center ${lightBg} px-4 py-8 relative overflow-hidden transition-colors duration-300`}
       onClick={handleNext}
     >
       {/* Transition overlay — every 3rd question */}
@@ -175,7 +203,9 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.2 }}
             >
-              <div className="text-8xl font-black mb-2 opacity-30">✦</div>
+              <div className="text-8xl font-black mb-2 opacity-30">
+                <img src="/icon_bosco.png" alt="" />
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -208,10 +238,11 @@ export default function QuizClient({ questions, categoryName, categoryColor }: P
               rounded-3xl border-2 ${border} bg-white
               p-8 md:p-12 shadow-xl cursor-pointer select-none
               min-h-[280px] flex flex-col items-center justify-center
+              transition-colors duration-300
             `}
           >
             <p className={`${accent} text-xs font-bold uppercase tracking-widest mb-6`}>
-              {categoryName}
+              {current?.categoryName}
             </p>
             <div
               className="rich-content text-gray-900 text-center w-full"

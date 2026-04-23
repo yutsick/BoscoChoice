@@ -1,31 +1,48 @@
 export interface QuizQuestion {
   id: string
-  htmlContent: string   // Lexical JSON pre-converted to HTML on the server
+  htmlContent: string
   subcategoryId: string
+  categoryId: string
+  categoryName: string
+  categoryColor: string
 }
 
 /**
- * Builds a round-robin queue of questions.
- * Cycles one question at a time from each subcategory in order.
+ * Builds a round-robin queue of questions cycling through categories.
  *
- * Example: subcategories [a, b, c] with 2 questions each →
- * result: [a1, b1, c1, a2, b2, c2]
+ * Example: categories [A, B, C] with questions →
+ * result: [A1, B1, C1, A2, B2, C2, ...]
  *
- * Within each subcategory the questions are shuffled randomly.
+ * Within each category the questions are shuffled randomly.
+ * If startCategoryId is provided, rotation begins from that category.
  */
-export function buildRoundRobinQueue(questions: QuizQuestion[]): QuizQuestion[] {
+export function buildRoundRobinQueue(
+  questions: QuizQuestion[],
+  startCategoryId?: string,
+): QuizQuestion[] {
   if (questions.length === 0) return []
 
-  // Group questions by subcategory
+  // Group questions by category
   const groupMap = new Map<string, QuizQuestion[]>()
   for (const q of questions) {
-    const group = groupMap.get(q.subcategoryId) ?? []
+    const group = groupMap.get(q.categoryId) ?? []
     group.push(q)
-    groupMap.set(q.subcategoryId, group)
+    groupMap.set(q.categoryId, group)
   }
 
-  // Shuffle within each subcategory group
-  const groups = Array.from(groupMap.values()).map((group) => shuffleArray([...group]))
+  // Sort category IDs for stable order
+  let categoryIds = Array.from(groupMap.keys()).sort()
+
+  // Rotate so the starting category comes first
+  if (startCategoryId) {
+    const idx = categoryIds.indexOf(startCategoryId)
+    if (idx > 0) {
+      categoryIds = [...categoryIds.slice(idx), ...categoryIds.slice(0, idx)]
+    }
+  }
+
+  // Shuffle within each category group
+  const groups = categoryIds.map((id) => shuffleArray([...groupMap.get(id)!]))
 
   // Round-robin interleave
   const result: QuizQuestion[] = []
