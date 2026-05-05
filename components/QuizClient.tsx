@@ -8,7 +8,9 @@ const STORAGE_KEY = 'bosco-shown-questions'
 
 interface Props {
   questions: QuizQuestion[]
-  startCategoryId: string
+  categoryName: string
+  categoryColor: string
+  categorySlug: string
 }
 
 const bgColorMap: Record<string, string> = {
@@ -92,22 +94,22 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-function getShownIds(): Set<string> {
+function getShownIds(categorySlug: string): Set<string> {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = sessionStorage.getItem(`${STORAGE_KEY}:${categorySlug}`)
     return raw ? new Set(JSON.parse(raw)) : new Set()
   } catch {
     return new Set()
   }
 }
 
-function addShownId(id: string) {
-  const shown = getShownIds()
+function addShownId(categorySlug: string, id: string) {
+  const shown = getShownIds(categorySlug)
   shown.add(id)
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...shown]))
+  sessionStorage.setItem(`${STORAGE_KEY}:${categorySlug}`, JSON.stringify([...shown]))
 }
 
-export default function QuizClient({ questions, startCategoryId }: Props) {
+export default function QuizClient({ questions, categoryName, categoryColor, categorySlug }: Props) {
   const [state, dispatch] = useReducer(reducer, {
     queue: [],
     index: 0,
@@ -118,19 +120,19 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
 
   useEffect(() => {
     // Filter out already-shown questions from sessionStorage
-    const shownIds = getShownIds()
+    const shownIds = getShownIds(categorySlug)
     const available = questions.filter((q) => !shownIds.has(q.id))
-    const queue = buildRoundRobinQueue(available, startCategoryId)
+    const queue = buildRoundRobinQueue(available)
     dispatch({ type: 'INIT', queue })
-  }, [questions, startCategoryId])
+  }, [questions, categorySlug])
 
   // Mark current question as shown in sessionStorage
   useEffect(() => {
     const current = state.queue[state.index]
     if (current) {
-      addShownId(current.id)
+      addShownId(categorySlug, current.id)
     }
-  }, [state.queue, state.index])
+  }, [state.queue, state.index, categorySlug])
 
   // Auto-hide transition overlay after 700ms
   useEffect(() => {
@@ -148,12 +150,10 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
 
   const current = state.queue[state.index]
 
-  // Use current question's category color (changes per question)
-  const color = current?.categoryColor ?? 'blue'
-  const bg = bgColorMap[color] ?? bgColorMap.blue
-  const lightBg = lightColorMap[color] ?? lightColorMap.blue
-  const border = borderColorMap[color] ?? borderColorMap.blue
-  const accent = textColorMap[color] ?? textColorMap.blue
+  const bg = bgColorMap[categoryColor] ?? bgColorMap.blue
+  const lightBg = lightColorMap[categoryColor] ?? lightColorMap.blue
+  const border = borderColorMap[categoryColor] ?? borderColorMap.blue
+  const accent = textColorMap[categoryColor] ?? textColorMap.blue
 
   if (state.queue.length === 0 && !state.finished) {
     return (
@@ -169,7 +169,7 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
         <div className={`rounded-3xl border-2 ${border} bg-white p-10 max-w-xl w-full text-center shadow-xl`}>
           <div className="text-6xl mb-6">🎉</div>
           <h2 className="text-3xl font-black text-gray-900 mb-4">Всі питання пройдено!</h2>
-          <p className="text-gray-500 mb-8">Нових питань більше немає</p>
+          <p className="text-gray-500 mb-8">Нових питань у цій категорії більше немає</p>
           <a
             href="/"
             className={`${bg} text-white px-8 py-3 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity`}
@@ -183,7 +183,7 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center ${lightBg} px-4 py-8 relative overflow-hidden transition-colors duration-300`}
+      className={`min-h-screen flex flex-col items-center justify-center ${lightBg} px-4 py-8 relative overflow-hidden`}
       onClick={handleNext}
     >
       {/* Transition overlay — every 3rd question */}
@@ -225,6 +225,11 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
         </div>
       </div>
 
+      {/* Category name */}
+      <h1 className={`${accent} text-xs font-bold uppercase tracking-widest mb-4`}>
+        {categoryName}
+      </h1>
+
       {/* Question card with slide animation */}
       <div className="w-full max-w-2xl relative">
         <AnimatePresence mode="wait" initial={false}>
@@ -238,12 +243,8 @@ export default function QuizClient({ questions, startCategoryId }: Props) {
               rounded-3xl border-2 ${border} bg-white
               p-8 md:p-12 shadow-xl cursor-pointer select-none
               min-h-[280px] flex flex-col items-center justify-center
-              transition-colors duration-300
             `}
           >
-            <p className={`${accent} text-xs font-bold uppercase tracking-widest mb-6`}>
-              {current?.categoryName}
-            </p>
             <div
               className="rich-content text-gray-900 text-center w-full"
               dangerouslySetInnerHTML={{ __html: current?.htmlContent ?? '' }}

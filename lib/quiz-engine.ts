@@ -2,47 +2,30 @@ export interface QuizQuestion {
   id: string
   htmlContent: string
   subcategoryId: string
-  categoryId: string
-  categoryName: string
-  categoryColor: string
 }
 
 /**
- * Builds a round-robin queue of questions cycling through categories.
+ * Builds a round-robin queue of questions cycling through subcategories.
  *
- * Example: categories [A, B, C] with questions →
- * result: [A1, B1, C1, A2, B2, C2, ...]
+ * Example: subcategories [a, b, c] with 2 questions each →
+ * result: [a1, b1, c1, a2, b2, c2]
  *
- * Within each category the questions are shuffled randomly.
- * If startCategoryId is provided, rotation begins from that category.
+ * Within each subcategory the questions are shuffled randomly.
+ * If there's only one subcategory, returns its questions shuffled.
  */
-export function buildRoundRobinQueue(
-  questions: QuizQuestion[],
-  startCategoryId?: string,
-): QuizQuestion[] {
+export function buildRoundRobinQueue(questions: QuizQuestion[]): QuizQuestion[] {
   if (questions.length === 0) return []
 
-  // Group questions by category
+  // Group questions by subcategory
   const groupMap = new Map<string, QuizQuestion[]>()
   for (const q of questions) {
-    const group = groupMap.get(q.categoryId) ?? []
+    const group = groupMap.get(q.subcategoryId) ?? []
     group.push(q)
-    groupMap.set(q.categoryId, group)
+    groupMap.set(q.subcategoryId, group)
   }
 
-  // Sort category IDs for stable order
-  let categoryIds = Array.from(groupMap.keys()).sort()
-
-  // Rotate so the starting category comes first
-  if (startCategoryId) {
-    const idx = categoryIds.indexOf(startCategoryId)
-    if (idx > 0) {
-      categoryIds = [...categoryIds.slice(idx), ...categoryIds.slice(0, idx)]
-    }
-  }
-
-  // Shuffle within each category group
-  const groups = categoryIds.map((id) => shuffleArray([...groupMap.get(id)!]))
+  // Shuffle within each subcategory group
+  const groups = Array.from(groupMap.values()).map((group) => shuffleArray([...group]))
 
   // Round-robin interleave
   const result: QuizQuestion[] = []
